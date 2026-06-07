@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520" role="img" aria-label="景点图片">
+  <defs>
+    <linearGradient id="sky" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#dff7f6"/>
+      <stop offset="0.52" stop-color="#f7fbff"/>
+      <stop offset="1" stop-color="#e8f5e9"/>
+    </linearGradient>
+    <linearGradient id="water" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#55b7c3"/>
+      <stop offset="1" stop-color="#7cc7a1"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="520" fill="url(#sky)"/>
+  <circle cx="705" cy="105" r="54" fill="#ffd166" opacity="0.9"/>
+  <path d="M0 295 C120 250 210 265 325 220 C470 162 585 218 700 173 C780 142 840 148 900 126 L900 520 L0 520 Z" fill="#7dbf92" opacity="0.76"/>
+  <path d="M0 333 C145 283 280 318 408 270 C542 220 662 278 788 232 C846 212 880 210 900 208 L900 520 L0 520 Z" fill="#3f9f8b" opacity="0.74"/>
+  <rect x="0" y="340" width="900" height="180" fill="url(#water)"/>
+  <path d="M54 389 C158 363 242 415 340 388 C460 356 558 412 680 384 C770 363 830 369 900 388" fill="none" stroke="#f8fffb" stroke-width="9" opacity="0.68"/>
+  <path d="M0 432 C128 405 245 453 356 428 C482 398 603 451 734 420 C805 403 858 405 900 417" fill="none" stroke="#ecfbf6" stroke-width="7" opacity="0.7"/>
+  <g transform="translate(320 178)">
+    <rect x="94" y="70" width="156" height="82" rx="4" fill="#f7efe0"/>
+    <rect x="112" y="92" width="28" height="60" fill="#d8b57a"/>
+    <rect x="158" y="92" width="28" height="60" fill="#d8b57a"/>
+    <rect x="204" y="92" width="28" height="60" fill="#d8b57a"/>
+    <path d="M60 72 L172 10 L284 72 Z" fill="#c85a3d"/>
+    <path d="M82 72 L172 27 L262 72 Z" fill="#e0774f"/>
+    <rect x="72" y="152" width="200" height="12" rx="6" fill="#b98d5f"/>
+  </g>
+  <text x="450" y="474" text-anchor="middle" fill="#24756f" font-family="Microsoft YaHei, Arial, sans-serif" font-size="28" font-weight="700">景点图片加载中</text>
+</svg>

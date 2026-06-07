@@ -1,0 +1,10 @@
+target/
+node_modules/
+dist/
+.npm-cache/
+.idea/
+.vscode/
+*.iml
+*.log
+.env
+/backend/src/main/resources/application.yaml
