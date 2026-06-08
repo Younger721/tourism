@@ -21,7 +21,7 @@
     </div>
     <div class="grid">
       <el-card v-for="post in posts" :key="post.id" class="travel-card">
-        <img :src="post.imageUrl || fallback" :alt="post.title" />
+        <img :src="post.imageUrl || fallback" :alt="post.title" loading="lazy" decoding="async" />
         <div class="body">
           <h3>{{ post.title }}</h3>
           <p class="muted">{{ post.destination || post.provinceName }} · {{ post.travelDate }}</p>
@@ -80,6 +80,7 @@ async function addFriend() {
 async function saveProfile() {
   const user = await http.put('/users/me', editForm)
   localStorage.setItem('user', JSON.stringify(user))
+  window.dispatchEvent(new Event('auth-state-changed'))
   editing.value = false
   ElMessage.success('资料已更新')
   load()

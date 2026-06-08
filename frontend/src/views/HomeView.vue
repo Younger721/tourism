@@ -61,7 +61,7 @@ async function favorite(type, item) {
   background: linear-gradient(rgba(2, 6, 23, 0.36), rgba(15, 23, 42, 0.62)),
     url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=80') center/cover;
   box-shadow: 0 28px 90px rgba(0, 0, 0, 0.36);
-  backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(10px) saturate(120%);
 }
 
 .hero h1 {

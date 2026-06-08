@@ -15,7 +15,7 @@
 
     <div class="grid post-grid">
       <el-card v-for="post in posts" :key="post.id" class="travel-card" shadow="hover">
-        <img :src="post.imageUrl || fallback" :alt="post.title" />
+        <img :src="post.imageUrl || fallback" :alt="post.title" loading="lazy" decoding="async" />
         <div class="body">
           <h3>{{ post.title }}</h3>
           <p class="muted">{{ post.destination || post.provinceName }} · {{ post.travelDate || '未填写日期' }}</p>

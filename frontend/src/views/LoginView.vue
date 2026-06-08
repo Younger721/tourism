@@ -49,6 +49,7 @@ async function submit() {
   const data = await http.post(isRegister.value ? '/auth/register' : '/auth/login', form)
   localStorage.setItem('token', data.token)
   localStorage.setItem('user', JSON.stringify(data.user))
+  window.dispatchEvent(new Event('auth-state-changed'))
   connectAuthSocket()
   ElMessage.success('登录成功')
   router.push(data.user.role === 'ADMIN' ? '/admin' : '/home')

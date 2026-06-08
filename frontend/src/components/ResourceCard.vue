@@ -1,6 +1,6 @@
 <template>
   <el-card class="travel-card" shadow="hover">
-    <img :src="imageSrc" :alt="item.name" @error="useFallback" />
+    <img :src="imageSrc" :alt="item.name" loading="lazy" decoding="async" @error="useFallback" />
     <div class="body">
       <h3>{{ item.name }}</h3>
       <p class="muted">{{ subtitle }}</p>

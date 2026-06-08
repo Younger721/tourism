@@ -37,24 +37,28 @@ import AiFloatingAssistant from './components/AiFloatingAssistant.vue'
 const route = useRoute()
 const router = useRouter()
 const theme = ref(localStorage.getItem('themeMode') || 'dark')
-const user = computed(() => {
-  route.fullPath
-  return JSON.parse(localStorage.getItem('user') || 'null')
-})
+const user = ref(readStoredUser())
 const isAuthPage = computed(() => route.path === '/login')
 const showAiAssistant = computed(() => Boolean(user.value) && !isAuthPage.value)
 const themeIcon = computed(() => theme.value === 'dark' ? Sun : Moon)
 const themeLabel = computed(() => theme.value === 'dark' ? '亮色' : '暗色')
 
 onMounted(() => {
-  applyTheme(theme.value)
+  syncStoredUser()
+  window.addEventListener('storage', syncStoredUser)
+  window.addEventListener('auth-state-changed', syncStoredUser)
   if (route.path !== '/login') {
     connectAuthSocket()
   }
 })
-onBeforeUnmount(disconnectAuthSocket)
+onBeforeUnmount(() => {
+  disconnectAuthSocket()
+  window.removeEventListener('storage', syncStoredUser)
+  window.removeEventListener('auth-state-changed', syncStoredUser)
+})
 watch(theme, applyTheme)
 watch(() => route.fullPath, () => {
+  syncStoredUser()
   if (localStorage.getItem('token') && route.path !== '/login') {
     connectAuthSocket()
   }
@@ -67,6 +71,18 @@ function applyTheme(value) {
   document.body.classList.toggle('theme-light', value === 'light')
   document.body.classList.toggle('theme-dark', value !== 'light')
   localStorage.setItem('themeMode', value)
+}
+
+function readStoredUser() {
+  try {
+    return JSON.parse(localStorage.getItem('user') || 'null')
+  } catch (error) {
+    return null
+  }
+}
+
+function syncStoredUser() {
+  user.value = readStoredUser()
 }
 
 function toggleTheme() {
@@ -82,6 +98,8 @@ async function logout() {
   disconnectAuthSocket()
   localStorage.removeItem('token')
   localStorage.removeItem('user')
+  user.value = null
+  window.dispatchEvent(new Event('auth-state-changed'))
   router.push('/login')
 }
 </script>

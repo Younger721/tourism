@@ -349,7 +349,7 @@ function clamp(value, min, max) {
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 22px;
   background: var(--panel-bg);
-  backdrop-filter: blur(24px) saturate(155%);
+  backdrop-filter: blur(14px) saturate(130%);
   box-shadow: 0 28px 88px rgba(0, 0, 0, 0.42);
 }
 

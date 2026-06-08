@@ -27,7 +27,7 @@
 
         <div v-else class="footprint-list">
           <article v-for="item in footprints" :key="item.id" class="footprint-item">
-            <img :src="item.imageUrl || fallback" :alt="item.title" />
+            <img :src="item.imageUrl || fallback" :alt="item.title" loading="lazy" decoding="async" />
             <div>
               <h4>{{ item.title }}</h4>
               <span>{{ item.travelDate || '未填写日期' }}</span>
@@ -197,7 +197,7 @@ function resetForm() {
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 22px;
   background: var(--glass-bg-strong);
-  backdrop-filter: blur(24px) saturate(155%);
+  backdrop-filter: blur(14px) saturate(130%);
   box-shadow: 0 28px 82px rgba(0, 0, 0, 0.38);
 }
 
@@ -246,7 +246,7 @@ function resetForm() {
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 16px;
   background: var(--glass-bg-soft);
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(8px);
 }
 
 .footprint-item img {

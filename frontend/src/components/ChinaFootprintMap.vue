@@ -276,7 +276,7 @@ function resize() {
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 22px;
   background: var(--map-bg);
-  backdrop-filter: blur(22px) saturate(150%);
+  backdrop-filter: blur(12px) saturate(125%);
   box-shadow: 0 28px 84px rgba(0, 0, 0, 0.36);
 }
 
@@ -291,7 +291,7 @@ function resize() {
   border-radius: 16px;
   color: #fde68a;
   background: rgba(120, 53, 15, 0.36);
-  backdrop-filter: blur(18px);
+  backdrop-filter: blur(10px);
   box-shadow: 0 16px 38px rgba(0, 0, 0, 0.24);
 }
 

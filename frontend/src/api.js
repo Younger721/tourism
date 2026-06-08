@@ -12,6 +12,7 @@ const http = axios.create({
 export function clearAuthAndRedirect(message = LOGIN_EXPIRED_MESSAGE) {
   localStorage.removeItem('token')
   localStorage.removeItem('user')
+  window.dispatchEvent(new Event('auth-state-changed'))
   if (!window.__authExpiredNotified) {
     window.__authExpiredNotified = true
     ElMessage.error(message || LOGIN_EXPIRED_MESSAGE)

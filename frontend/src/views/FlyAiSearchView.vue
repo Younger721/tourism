@@ -269,7 +269,7 @@ function isPlainObject(value) {
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   background: var(--glass-bg);
-  backdrop-filter: blur(22px) saturate(150%);
+  backdrop-filter: blur(12px) saturate(125%);
   box-shadow: var(--shadow-glass);
 }
 
@@ -324,7 +324,7 @@ function isPlainObject(value) {
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   background: var(--glass-bg);
-  backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(10px) saturate(120%);
 }
 
 .answer-card h4 {
@@ -343,7 +343,7 @@ function isPlainObject(value) {
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   background: var(--glass-bg);
-  backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(10px) saturate(120%);
 }
 
 .item-top {

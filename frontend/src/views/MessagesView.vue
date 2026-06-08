@@ -369,7 +369,7 @@ function scrollMessages() {
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 16px;
   background: var(--glass-bg-soft);
-  backdrop-filter: blur(18px);
+  backdrop-filter: blur(10px);
 }
 
 .friend-row {
@@ -431,7 +431,7 @@ function scrollMessages() {
   background:
     radial-gradient(circle at 24% 18%, rgba(94, 234, 212, 0.12), transparent 30%),
     var(--glass-bg-soft);
-  backdrop-filter: blur(18px);
+  backdrop-filter: blur(10px);
 }
 
 .bubble {

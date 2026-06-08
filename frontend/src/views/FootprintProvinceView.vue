@@ -10,7 +10,7 @@
 
     <div class="grid">
       <el-card v-for="item in list" :key="item.id" class="travel-card">
-        <img :src="item.imageUrl || fallback" :alt="item.title" />
+        <img :src="item.imageUrl || fallback" :alt="item.title" loading="lazy" decoding="async" />
         <div class="body">
           <h3>{{ item.title }}</h3>
           <p class="muted">{{ item.travelDate }}</p>

@@ -9,7 +9,7 @@
       <el-button type="primary" :icon="Upload" :loading="loading">上传图片</el-button>
     </el-upload>
     <el-input v-model="model" placeholder="也可以粘贴图片URL" clearable />
-    <img v-if="model" class="preview" :src="model" alt="图片预览" />
+    <img v-if="model" class="preview" :src="model" alt="图片预览" decoding="async" />
   </div>
 </template>
 
