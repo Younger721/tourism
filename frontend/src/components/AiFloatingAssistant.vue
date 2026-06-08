@@ -39,7 +39,7 @@
         >
           <div class="ai-message-bubble">{{ message.content }}</div>
         </div>
-        <div v-if="loading" class="ai-message is-assistant">
+        <div v-if="loading && waitingForFirstChunk" class="ai-message is-assistant">
           <div class="ai-message-bubble">正在整理建议...</div>
         </div>
       </div>
@@ -76,6 +76,7 @@ const EDGE_GAP = 18
 const open = ref(false)
 const draft = ref('')
 const loading = ref(false)
+const waitingForFirstChunk = ref(false)
 const messages = ref([])
 const messageListRef = ref(null)
 const viewport = ref({ width: 1280, height: 720 })
@@ -188,22 +189,40 @@ async function sendMessage() {
   messages.value.push({ role: 'user', content })
   draft.value = ''
   loading.value = true
+  waitingForFirstChunk.value = true
   await nextTick(scrollToBottom)
 
+  let assistantIndex = -1
   try {
-    const assistantMessage = { role: 'assistant', content: '' }
-    messages.value.push(assistantMessage)
+    assistantIndex = messages.value.length
+    messages.value.push({ role: 'assistant', content: '' })
     await streamChat(content, history, async (chunk) => {
-      assistantMessage.content += chunk
+      waitingForFirstChunk.value = false
+      messages.value[assistantIndex] = {
+        ...messages.value[assistantIndex],
+        content: messages.value[assistantIndex].content + chunk
+      }
       await nextTick(scrollToBottom)
     })
-    if (!assistantMessage.content.trim()) {
-      assistantMessage.content = '我暂时没有整理出合适的回复。'
+    if (!messages.value[assistantIndex].content.trim()) {
+      messages.value[assistantIndex] = {
+        ...messages.value[assistantIndex],
+        content: '我暂时没有整理出合适的回复。'
+      }
     }
   } catch (error) {
-    messages.value.push({ role: 'assistant', content: getFriendlyError(error) })
+    const errorMessage = getFriendlyError(error)
+    if (assistantIndex >= 0) {
+      messages.value[assistantIndex] = {
+        ...messages.value[assistantIndex],
+        content: errorMessage
+      }
+    } else {
+      messages.value.push({ role: 'assistant', content: errorMessage })
+    }
   } finally {
     loading.value = false
+    waitingForFirstChunk.value = false
     await nextTick(scrollToBottom)
   }
 }
@@ -215,13 +234,15 @@ async function streamChat(content, history, onChunk) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Accept': 'text/event-stream',
       ...(token ? { Authorization: `Bearer ${token}` } : {})
     },
     body: JSON.stringify({ message: content, history })
   })
 
   if (!response.ok || !response.body) {
-    throw new Error(`请求失败：${response.status}`)
+    const errorText = await response.text().catch(() => '')
+    throw new Error(errorText || `请求失败：${response.status}`)
   }
 
   const reader = response.body.getReader()
@@ -261,6 +282,9 @@ async function handleSseEvent(rawEvent, onChunk) {
   }
   if (event === 'error') {
     throw new Error(payload.message || 'AI流式调用失败')
+  }
+  if (event === 'done') {
+    return
   }
   if (event === 'message') {
     const content = typeof payload === 'string' ? payload : payload.content

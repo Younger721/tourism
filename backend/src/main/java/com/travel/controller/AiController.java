@@ -13,8 +13,10 @@ import com.travel.mapper.AiTripPlanMapper;
 import com.travel.service.AiTripService;
 import com.travel.service.TokenService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -87,8 +89,12 @@ public class AiController {
      */
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<String>> chatStream(@RequestBody AiChatRequest request,
-                                                    HttpServletRequest httpRequest) {
+                                                    HttpServletRequest httpRequest,
+                                                    HttpServletResponse httpResponse) {
         User user = tokenService.requireUser(httpRequest);
+        httpResponse.setHeader(HttpHeaders.CACHE_CONTROL, "no-cache");
+        httpResponse.setHeader("X-Accel-Buffering", "no");
+        httpResponse.setHeader(HttpHeaders.CONNECTION, "keep-alive");
         log.info("用户[{}]发起AI流式对话，消息长度{}", user.getId(), safeLength(request.getMessage()));
         return Flux.<ServerSentEvent<String>>create(sink -> {
             long startedAt = System.currentTimeMillis();

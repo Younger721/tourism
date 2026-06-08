@@ -6,6 +6,6 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
-    allowedHosts: ['.ngrok-free.dev', 'lapping-monogram-shrapnel.ngrok-free.dev']
+    allowedHosts: ['.ngrok-free.dev', '.ngrok-free.app', 'lapping-monogram-shrapnel.ngrok-free.dev']
   }
 })
