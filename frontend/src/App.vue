@@ -27,10 +27,11 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { LogIn, LogOut, Moon, Sun } from 'lucide-vue-next'
 import http from './api'
+import { connectAuthSocket, disconnectAuthSocket } from './authSocket'
 import AiFloatingAssistant from './components/AiFloatingAssistant.vue'
 
 const route = useRoute()
@@ -45,8 +46,22 @@ const showAiAssistant = computed(() => Boolean(user.value) && !isAuthPage.value)
 const themeIcon = computed(() => theme.value === 'dark' ? Sun : Moon)
 const themeLabel = computed(() => theme.value === 'dark' ? '亮色' : '暗色')
 
-onMounted(() => applyTheme(theme.value))
+onMounted(() => {
+  applyTheme(theme.value)
+  if (route.path !== '/login') {
+    connectAuthSocket()
+  }
+})
+onBeforeUnmount(disconnectAuthSocket)
 watch(theme, applyTheme)
+watch(() => route.fullPath, () => {
+  if (localStorage.getItem('token') && route.path !== '/login') {
+    connectAuthSocket()
+  }
+  if (!localStorage.getItem('token') || route.path === '/login') {
+    disconnectAuthSocket()
+  }
+})
 
 function applyTheme(value) {
   document.body.classList.toggle('theme-light', value === 'light')
@@ -64,6 +79,7 @@ async function logout() {
   } catch (error) {
     // Local cleanup still happens if the server session is already gone.
   }
+  disconnectAuthSocket()
   localStorage.removeItem('token')
   localStorage.removeItem('user')
   router.push('/login')
