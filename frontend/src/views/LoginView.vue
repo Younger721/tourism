@@ -35,6 +35,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { LogIn } from 'lucide-vue-next'
 import http from '../api'
+import { connectAuthSocket } from '../authSocket'
 
 const router = useRouter()
 const isRegister = ref(false)
@@ -48,6 +49,7 @@ async function submit() {
   const data = await http.post(isRegister.value ? '/auth/register' : '/auth/login', form)
   localStorage.setItem('token', data.token)
   localStorage.setItem('user', JSON.stringify(data.user))
+  connectAuthSocket()
   ElMessage.success('登录成功')
   router.push(data.user.role === 'ADMIN' ? '/admin' : '/home')
 }
