@@ -33,11 +33,11 @@ public class FlyAiController {
     @PostMapping("/search")
     public ApiResponse<FlyAiSearchResponse> search(@RequestBody FlyAiSearchRequest request, HttpServletRequest httpRequest) {
         User user = tokenService.requireUser(httpRequest);
-        log.info("FlyAI搜索请求 userId={} 类型={} 城市={} 查询长度={}",
-                user.getId(), request.getType(), request.getCity(), safeLength(request.getQuery()));
+        log.info("用户[{}]发起FlyAI搜索：城市={}, 类型={}, 查询长度{}",
+                user.getId(), request.getCity(), request.getType(), safeLength(request.getQuery()));
         FlyAiSearchResponse response = flyAiService.search(request);
-        log.info("FlyAI搜索完成 userId={} 类型={} 成功={} 结果数={}",
-                user.getId(), response.getType(), response.isSuccess(), response.getItems().size());
+        log.info("用户[{}]的FlyAI搜索完成：{}，共{}条结果",
+                user.getId(), response.isSuccess() ? "成功" : "失败", response.getItems().size());
         return ApiResponse.ok(response);
     }
 

@@ -50,8 +50,8 @@ public class AiController {
     public ApiResponse<TripPlanResponse> plan(@RequestBody TripPlanRequest request,
                                               HttpServletRequest httpRequest) throws Exception {
         User user = tokenService.requireUser(httpRequest);
-        log.info("AI旅行计划请求 userId={} 模式={} 目的地={} 天数={} 预算={}",
-                user.getId(), request.getMode(), request.getDestination(), request.getDays(), request.getBudget());
+        log.info("用户[{}]请求生成旅行计划：目的地={}, 天数={}, 预算={}, 模式={}",
+                user.getId(), request.getDestination(), request.getDays(), request.getBudget(), request.getMode());
         TripPlanResponse response = aiTripService.generate(request);
         AiTripPlan plan = new AiTripPlan();
         plan.setUserId(user.getId());
@@ -65,7 +65,7 @@ public class AiController {
         plan.setStartDate(request.getStartDate());
         plan.setResultJson(objectMapper.writeValueAsString(response));
         aiTripPlanMapper.insert(plan);
-        log.info("AI旅行计划已保存 userId={} 计划ID={} 推荐目的地={}",
+        log.info("用户[{}]的旅行计划已保存 [ID={}]，推荐目的地：{}",
                 user.getId(), plan.getId(), response.getRecommendedDestination());
         return ApiResponse.ok(response);
     }
@@ -76,9 +76,9 @@ public class AiController {
     @PostMapping("/chat")
     public ApiResponse<AiChatResponse> chat(@RequestBody AiChatRequest request, HttpServletRequest httpRequest) {
         User user = tokenService.requireUser(httpRequest);
-        log.info("AI聊天请求 userId={} 消息长度={}", user.getId(), safeLength(request.getMessage()));
+        log.info("用户[{}]发起AI对话，消息长度{}", user.getId(), safeLength(request.getMessage()));
         AiChatResponse response = new AiChatResponse(aiTripService.chat(request));
-        log.info("AI聊天完成 userId={} 响应长度={}", user.getId(), safeLength(response.getReply()));
+        log.info("用户[{}]的AI对话已完成，响应长度{}", user.getId(), safeLength(response.getReply()));
         return ApiResponse.ok(response);
     }
 
@@ -89,7 +89,7 @@ public class AiController {
     public Flux<ServerSentEvent<String>> chatStream(@RequestBody AiChatRequest request,
                                                     HttpServletRequest httpRequest) {
         User user = tokenService.requireUser(httpRequest);
-        log.info("AI流式请求 userId={} 消息长度={}", user.getId(), safeLength(request.getMessage()));
+        log.info("用户[{}]发起AI流式对话，消息长度{}", user.getId(), safeLength(request.getMessage()));
         return Flux.<ServerSentEvent<String>>create(sink -> {
             long startedAt = System.currentTimeMillis();
             try {
@@ -102,9 +102,9 @@ public class AiController {
                     sink.next(sseEvent("done", Map.of("done", true)));
                     sink.complete();
                 }
-                log.info("AI流式完成 userId={} 耗时(毫秒)={}", user.getId(), System.currentTimeMillis() - startedAt);
+                log.info("用户[{}]的AI流式对话已完成，耗时{}ms", user.getId(), System.currentTimeMillis() - startedAt);
             } catch (Exception ex) {
-                log.warn("AI流式失败 userId={} 错误={}", user.getId(), ex.getMessage());
+                log.warn("用户[{}]的AI流式对话失败：{}", user.getId(), ex.getMessage());
                 if (!sink.isCancelled()) {
                     sink.next(sseEvent("error", Map.of("message", ex.getMessage())));
                     sink.complete();

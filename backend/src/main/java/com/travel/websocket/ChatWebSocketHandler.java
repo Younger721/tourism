@@ -47,14 +47,14 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         User user = resolveUser(session);
         if (user == null) {
-            log.warn("聊天WebSocket连接被拒绝 sessionId={}", session.getId());
+            log.warn("用户未登录，聊天连接被拒绝 [会话ID={}]", session.getId());
             session.close(CloseStatus.NOT_ACCEPTABLE.withReason("unauthorized"));
             return;
         }
         session.getAttributes().put("userId", user.getId());
         onlineUsers.put(user.getId(), session);
-        log.info("聊天WebSocket连接成功 userId={} sessionId={} 在线用户数={}",
-                user.getId(), session.getId(), onlineUsers.size());
+        log.info("用户[{}]已加入聊天，当前在线人数{} [会话ID={}]",
+                user.getId(), onlineUsers.size(), session.getId());
     }
 
     /**
@@ -65,11 +65,11 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         Long senderId = (Long) session.getAttributes().get("userId");
         ChatPayload payload = objectMapper.readValue(message.getPayload(), ChatPayload.class);
         if (senderId == null || payload.getReceiverId() == null || !StringUtils.hasText(payload.getContent())) {
-            log.warn("忽略无效聊天消息 senderId={} sessionId={}", senderId, session.getId());
+            log.warn("收到无效聊天消息，已忽略 [发送者={}, 会话ID={}]", senderId, session.getId());
             return;
         }
         if (!friendService.areFriends(senderId, payload.getReceiverId())) {
-            log.warn("拒绝非好友聊天请求 senderId={} receiverId={}", senderId, payload.getReceiverId());
+            log.warn("非好友聊天请求被拒绝 [发送者={}, 接收者={}]", senderId, payload.getReceiverId());
             session.sendMessage(new TextMessage("{\"error\":\"只有好友之间可以私聊\"}"));
             return;
         }
@@ -87,8 +87,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         if (delivered) {
             receiver.sendMessage(new TextMessage(json));
         }
-        log.info("聊天消息已保存 messageId={} senderId={} receiverId={} 是否在线送达={}",
-                chatMessage.getId(), senderId, payload.getReceiverId(), delivered);
+        log.info("消息[{}]已保存，{}→{}，{}",
+                chatMessage.getId(), senderId, payload.getReceiverId(), delivered ? "已送达" : "等待上线");
     }
 
     /**
@@ -99,8 +99,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         Long userId = (Long) session.getAttributes().get("userId");
         if (userId != null) {
             onlineUsers.remove(userId);
-            log.info("聊天WebSocket连接关闭 userId={} sessionId={} 状态={} 在线用户数={}",
-                    userId, session.getId(), status.getCode(), onlineUsers.size());
+            log.info("用户[{}]已离开聊天，当前在线人数{} [会话ID={}, 状态码={}]",
+                    userId, onlineUsers.size(), session.getId(), status.getCode());
         }
     }
 
@@ -110,14 +110,14 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     public void closeUserSession(Long userId, String reason) {
         WebSocketSession session = onlineUsers.remove(userId);
         if (session == null || !session.isOpen()) {
-            log.info("没有可关闭的聊天WebSocket会话 userId={}", userId);
+            log.info("用户[{}]没有活跃的聊天连接，无需关闭", userId);
             return;
         }
         try {
             session.close(CloseStatus.POLICY_VIOLATION.withReason(reason));
-            log.info("聊天WebSocket被服务端关闭 userId={} sessionId={}", userId, session.getId());
+            log.info("已强制断开用户[{}]的聊天连接 [会话ID={}]", userId, session.getId());
         } catch (Exception ex) {
-            log.warn("聊天WebSocket关闭失败 userId={} 错误={}", userId, ex.getMessage());
+            log.warn("断开用户[{}]聊天连接时发生错误：{}", userId, ex.getMessage());
         }
     }
 
@@ -127,7 +127,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     public void sendFriendEvent(Long userId, String action, Long relatedUserId) {
         WebSocketSession session = onlineUsers.get(userId);
         if (session == null || !session.isOpen()) {
-            log.info("好友事件跳过，用户离线 userId={} 操作={}", userId, action);
+            log.info("用户[{}]离线，好友事件[{}]已跳过", userId, action);
             return;
         }
         try {
@@ -136,9 +136,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             payload.put("action", action);
             payload.put("relatedUserId", relatedUserId);
             session.sendMessage(new TextMessage(objectMapper.writeValueAsString(payload)));
-            log.info("好友事件已发送 userId={} 操作={} 相关用户ID={}", userId, action, relatedUserId);
+            log.info("好友事件[{}]已发送给用户[{}]，涉及用户[{}]", action, userId, relatedUserId);
         } catch (Exception ex) {
-            log.warn("好友事件发送失败 userId={} 操作={} 错误={}", userId, action, ex.getMessage());
+            log.warn("向用户[{}]发送好友事件[{}]失败：{}", userId, action, ex.getMessage());
         }
     }
 

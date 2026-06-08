@@ -28,7 +28,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } finally {
             long durationMs = System.currentTimeMillis() - startedAt;
-            log.info("HTTP请求 方法={} 路径={} 状态码={} 耗时={}ms 客户端={}",
+            log.info("请求完成 [{}] {} -> {}，耗时{}ms，客户端：{}",
                     request.getMethod(),
                     path,
                     response.getStatus(),

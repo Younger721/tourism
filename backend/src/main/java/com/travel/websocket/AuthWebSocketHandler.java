@@ -39,15 +39,15 @@ public class AuthWebSocketHandler extends TextWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         User user = resolveUser(session);
         if (user == null) {
-            log.warn("认证WebSocket连接被拒绝 sessionId={}", session.getId());
+            log.warn("用户未登录，认证连接被拒绝 [会话ID={}]", session.getId());
             session.close(CloseStatus.NOT_ACCEPTABLE.withReason("unauthorized"));
             return;
         }
         session.getAttributes().put("userId", user.getId());
         Set<WebSocketSession> sessions = userSessions.computeIfAbsent(user.getId(), key -> new CopyOnWriteArraySet<>());
         sessions.add(session);
-        log.info("认证WebSocket连接成功 userId={} sessionId={} 活跃标签数={}",
-                user.getId(), session.getId(), sessions.size());
+        log.info("用户[{}]已注册认证通道，当前活跃标签数{} [会话ID={}]",
+                user.getId(), sessions.size(), session.getId());
     }
 
     /**
@@ -67,8 +67,8 @@ public class AuthWebSocketHandler extends TextWebSocketHandler {
         if (sessions.isEmpty()) {
             userSessions.remove(userId);
         }
-        log.info("认证WebSocket连接关闭 userId={} sessionId={} 状态={} 剩余标签数={}",
-                userId, session.getId(), status.getCode(), sessions.size());
+        log.info("用户[{}]认证通道已关闭，剩余活跃标签数{} [会话ID={}, 状态码={}]",
+                userId, sessions.size(), session.getId(), status.getCode());
     }
 
     /**
@@ -77,7 +77,7 @@ public class AuthWebSocketHandler extends TextWebSocketHandler {
     public void notifyKickout(Long userId, String reason) {
         Set<WebSocketSession> sessions = userSessions.remove(userId);
         if (sessions == null || sessions.isEmpty()) {
-            log.info("没有可通知的认证WebSocket会话 userId={}", userId);
+            log.info("用户[{}]没有活跃的认证通道，无需通知", userId);
             return;
         }
         Map<String, Object> payload = new LinkedHashMap<>();
@@ -93,11 +93,11 @@ public class AuthWebSocketHandler extends TextWebSocketHandler {
                 session.close(CloseStatus.POLICY_VIOLATION.withReason(reason));
                 notified++;
             } catch (Exception ex) {
-                log.warn("认证WebSocket强制登出通知失败 userId={} sessionId={} 错误={}",
+                log.warn("通知用户[{}]强制登出时出错 [会话ID={}]：{}",
                         userId, session.getId(), ex.getMessage());
             }
         }
-        log.info("认证WebSocket强制登出通知完成 userId={} 会话数={} 已通知数={}",
+        log.info("已通知用户[{}]强制登出，共{}个会话，成功{}个",
                 userId, sessions.size(), notified);
     }
 

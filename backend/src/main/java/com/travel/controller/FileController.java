@@ -33,12 +33,12 @@ public class FileController {
     @PostMapping("/upload")
     public ApiResponse<FileUploadResponse> upload(@RequestParam("file") MultipartFile file, HttpServletRequest request) {
         User user = tokenService.requireUser(request);
-        log.info("文件上传请求 userId={} 文件名={} 大小={}",
+        log.info("用户[{}]上传文件：{}，大小{}字节",
                 user.getId(),
-                file == null ? null : file.getOriginalFilename(),
+                file == null ? "空文件" : file.getOriginalFilename(),
                 file == null ? 0 : file.getSize());
         FileUploadResponse response = fileStorageService.uploadImage(file);
-        log.info("文件上传成功 userId={} 对象名={}", user.getId(), response.getObjectName());
+        log.info("用户[{}]文件上传成功：{}", user.getId(), response.getObjectName());
         return ApiResponse.ok(response);
     }
 }

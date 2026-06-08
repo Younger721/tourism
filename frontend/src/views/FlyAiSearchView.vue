@@ -3,7 +3,6 @@
     <div class="section-title">
       <div>
         <h2>旅行搜索</h2>
-        <p class="muted">用 FlyAI 查询实时旅行信息，适合搜索景点、酒店、机票和行程线索。</p>
       </div>
     </div>
 
@@ -128,7 +127,7 @@ import { Search } from 'lucide-vue-next'
 import http from '../api'
 
 const form = reactive({
-  type: 'AI',
+  type: 'FLIGHT',
   query: '',
   city: '',
   origin: '',
@@ -143,7 +142,6 @@ const loading = ref(false)
 const result = ref(null)
 const error = ref('')
 const typeOptions = [
-  { label: '综合', value: 'AI' },
   { label: '机票', value: 'FLIGHT' },
   { label: '火车', value: 'TRAIN' },
   { label: '酒店', value: 'HOTEL' },

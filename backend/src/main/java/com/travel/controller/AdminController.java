@@ -74,7 +74,7 @@ public class AdminController {
         data.put("spots", scenicSpotMapper.selectCount(null));
         data.put("posts", travelPostMapper.selectCount(null));
         data.put("footprints", footprintMapper.selectCount(null));
-        log.info("管理员统计数据已加载 adminId={} 数据={}", admin.getId(), data);
+        log.info("管理员[{}]已查看仪表盘统计：{}", admin.getId(), data);
         return ApiResponse.ok(data);
     }
 
@@ -96,10 +96,10 @@ public class AdminController {
         }
         if (item.getId() == null) {
             scenicSpotMapper.insert(item);
-            log.info("管理员创建景点 adminId={} 景点ID={} 名称={}", admin.getId(), item.getId(), item.getName());
+            log.info("管理员[{}]创建了新景点：{} [ID={}]", admin.getId(), item.getName(), item.getId());
         } else {
             scenicSpotMapper.updateById(item);
-            log.info("管理员更新景点 adminId={} 景点ID={} 名称={}", admin.getId(), item.getId(), item.getName());
+            log.info("管理员[{}]更新了景点：{} [ID={}]", admin.getId(), item.getName(), item.getId());
         }
         return ApiResponse.ok(item);
     }
@@ -112,7 +112,7 @@ public class AdminController {
         User admin = tokenService.requireAdmin(request);
         scenicSpotMapper.deleteById(id);
         deleteEngagements("SCENIC", id);
-        log.info("管理员删除景点 adminId={} 景点ID={}", admin.getId(), id);
+        log.info("管理员[{}]删除了景点 [ID={}]", admin.getId(), id);
         return ApiResponse.ok(null);
     }
 
@@ -130,7 +130,7 @@ public class AdminController {
     @DeleteMapping("/users/{id}")
     public ApiResponse<Void> disableUser(@PathVariable Long id, HttpServletRequest request) {
         User admin = tokenService.requireAdmin(request);
-        log.info("管理员禁用用户 adminId={} 目标用户ID={}", admin.getId(), id);
+        log.info("管理员[{}]禁用了用户 [ID={}]", admin.getId(), id);
         setUserStatus(id, 0, admin);
         return ApiResponse.ok(null);
     }
@@ -142,7 +142,7 @@ public class AdminController {
     public ApiResponse<User> updateUserStatus(@PathVariable Long id, @RequestBody UserStatusRequest body,
                                               HttpServletRequest request) {
         User admin = tokenService.requireAdmin(request);
-        log.info("管理员更新用户状态 adminId={} 目标用户ID={} 状态={}", admin.getId(), id, body.status());
+        log.info("管理员[{}]修改用户状态 [用户ID={}, 状态={}]", admin.getId(), id, body.status() == 1 ? "启用" : "禁用");
         User user = setUserStatus(id, body.status(), admin);
         user.setPassword(null);
         return ApiResponse.ok(user);
@@ -154,7 +154,7 @@ public class AdminController {
     @PostMapping("/users/{id}/kickout")
     public ApiResponse<Void> kickoutUser(@PathVariable Long id, HttpServletRequest request) {
         User admin = tokenService.requireAdmin(request);
-        log.info("管理员强制用户下线 adminId={} 目标用户ID={}", admin.getId(), id);
+        log.info("管理员[{}]强制用户下线 [用户ID={}]", admin.getId(), id);
         assertNotSelf(admin, id);
         assertUserExists(id);
         kickoutAndCloseSocket(id);
@@ -175,7 +175,7 @@ public class AdminController {
         User admin = tokenService.requireAdmin(request);
         travelPostMapper.deleteById(id);
         deleteEngagements("POST", id);
-        log.info("管理员删除帖子 adminId={} 帖子ID={}", admin.getId(), id);
+        log.info("管理员[{}]删除了帖子 [ID={}]", admin.getId(), id);
         return ApiResponse.ok(null);
     }
 
@@ -192,7 +192,7 @@ public class AdminController {
     public ApiResponse<Void> deleteFootprint(@PathVariable Long id, HttpServletRequest request) {
         User admin = tokenService.requireAdmin(request);
         footprintMapper.deleteById(id);
-        log.info("管理员删除足迹 adminId={} 足迹ID={}", admin.getId(), id);
+        log.info("管理员[{}]删除了足迹记录 [ID={}]", admin.getId(), id);
         return ApiResponse.ok(null);
     }
 
@@ -204,7 +204,7 @@ public class AdminController {
         User user = assertUserExists(userId);
         user.setStatus(status);
         userMapper.updateById(user);
-        log.info("用户状态已更新 adminId={} 目标用户ID={} 状态={}", admin.getId(), userId, status);
+        log.info("用户[{}]状态已变更为{}", userId, status == 1 ? "启用" : "禁用");
         if (status == 0) {
             kickoutAndCloseSocket(userId);
         }
@@ -229,7 +229,7 @@ public class AdminController {
         tokenService.kickoutUser(userId);
         authWebSocketHandler.notifyKickout(userId, "管理员已强制下线");
         chatWebSocketHandler.closeUserSession(userId, "管理员已强制下线");
-        log.info("用户套接字已关闭（强制下线后） userId={}", userId);
+        log.info("用户[{}]的所有连接已断开（强制下线）", userId);
     }
 
     private void deleteEngagements(String targetType, Long targetId) {

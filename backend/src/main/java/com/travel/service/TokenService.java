@@ -28,7 +28,7 @@ public class TokenService {
     public String createToken(User user) {
         StpUtil.login(user.getId(), SaLoginParameter.create().setIsShare(false));
         user.setPassword(null);
-        log.info("登录令牌创建成功 用户ID={} 用户名={} 角色={}", user.getId(), user.getUsername(), user.getRole());
+        log.info("用户[{}]登录成功，用户名：{}，角色：{}", user.getId(), user.getUsername(), user.getRole());
         return StpUtil.getTokenValue();
     }
 
@@ -39,7 +39,7 @@ public class TokenService {
         try {
             return loadActiveUser(StpUtil.getLoginIdAsLong());
         } catch (NotLoginException ex) {
-            log.warn("请求被拒绝：令牌缺失或已失效");
+            log.warn("请求未授权：用户未登录或登录已过期");
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "请先登录");
         }
     }
@@ -50,7 +50,7 @@ public class TokenService {
     public void logoutCurrent() {
         if (StpUtil.isLogin()) {
             StpUtil.logout();
-            log.info("当前登录令牌已退出");
+            log.info("用户已退出登录");
         }
     }
 
@@ -60,7 +60,7 @@ public class TokenService {
     public void kickoutUser(Long userId) {
         if (userId != null) {
             StpUtil.kickout(userId);
-            log.info("用户已被强制下线 用户ID={}", userId);
+            log.info("用户[{}]已被强制下线", userId);
         }
     }
 
@@ -90,7 +90,7 @@ public class TokenService {
     public User requireAdmin(HttpServletRequest request) {
         User user = requireUser(request);
         if (!"ADMIN".equals(user.getRole())) {
-            log.warn("管理员权限校验失败 用户ID={} 角色={}", user.getId(), user.getRole());
+            log.warn("权限不足：用户[{}]尝试访问管理员功能，当前角色：{}", user.getId(), user.getRole());
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "无管理员权限");
         }
         return user;
@@ -102,7 +102,7 @@ public class TokenService {
     private User loadActiveUser(Long userId) {
         User user = userMapper.selectById(userId);
         if (user == null || user.getStatus() == null || user.getStatus() == 0) {
-            log.warn("用户不存在或已被禁用 用户ID={}", userId);
+            log.warn("用户不存在或已被禁用 [ID={}]", userId);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "账号已被禁用或登录已失效");
         }
         user.setPassword(null);
