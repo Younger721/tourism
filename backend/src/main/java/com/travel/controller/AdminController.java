@@ -5,6 +5,7 @@ import com.travel.common.ApiResponse;
 import com.travel.entity.*;
 import com.travel.mapper.*;
 import com.travel.service.TokenService;
+import com.travel.websocket.AuthWebSocketHandler;
 import com.travel.websocket.ChatWebSocketHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
@@ -23,11 +24,13 @@ public class AdminController {
     private final FootprintMapper footprintMapper;
     private final TravelPostMapper travelPostMapper;
     private final TokenService tokenService;
+    private final AuthWebSocketHandler authWebSocketHandler;
     private final ChatWebSocketHandler chatWebSocketHandler;
 
     public AdminController(ScenicSpotMapper scenicSpotMapper, UserMapper userMapper, CommentMapper commentMapper,
                            FavoriteMapper favoriteMapper, FootprintMapper footprintMapper, TravelPostMapper travelPostMapper,
-                           TokenService tokenService, ChatWebSocketHandler chatWebSocketHandler) {
+                           TokenService tokenService, AuthWebSocketHandler authWebSocketHandler,
+                           ChatWebSocketHandler chatWebSocketHandler) {
         this.scenicSpotMapper = scenicSpotMapper;
         this.userMapper = userMapper;
         this.commentMapper = commentMapper;
@@ -35,6 +38,7 @@ public class AdminController {
         this.footprintMapper = footprintMapper;
         this.travelPostMapper = travelPostMapper;
         this.tokenService = tokenService;
+        this.authWebSocketHandler = authWebSocketHandler;
         this.chatWebSocketHandler = chatWebSocketHandler;
     }
 
@@ -168,6 +172,7 @@ public class AdminController {
 
     private void kickoutAndCloseSocket(Long userId) {
         tokenService.kickoutUser(userId);
+        authWebSocketHandler.notifyKickout(userId, "管理员已强制下线");
         chatWebSocketHandler.closeUserSession(userId, "管理员已强制下线");
     }
 
