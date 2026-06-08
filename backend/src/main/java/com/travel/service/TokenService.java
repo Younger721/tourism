@@ -6,44 +6,67 @@ import cn.dev33.satoken.stp.parameter.SaLoginParameter;
 import com.travel.entity.User;
 import com.travel.mapper.UserMapper;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class TokenService {
+    private static final Logger log = LoggerFactory.getLogger(TokenService.class);
+
     private final UserMapper userMapper;
 
     public TokenService(UserMapper userMapper) {
         this.userMapper = userMapper;
     }
 
+    /**
+     * 创建不共享的 Sa-Token 会话，并清理返回用户对象里的密码。
+     */
     public String createToken(User user) {
         StpUtil.login(user.getId(), SaLoginParameter.create().setIsShare(false));
         user.setPassword(null);
+        log.info("登录令牌创建成功 用户ID={} 用户名={} 角色={}", user.getId(), user.getUsername(), user.getRole());
         return StpUtil.getTokenValue();
     }
 
+    /**
+     * 解析当前请求用户，未登录或登录失效时直接拒绝请求。
+     */
     public User requireUser(HttpServletRequest request) {
         try {
             return loadActiveUser(StpUtil.getLoginIdAsLong());
         } catch (NotLoginException ex) {
+            log.warn("请求被拒绝：令牌缺失或已失效");
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "请先登录");
         }
     }
 
+    /**
+     * 当前存在登录会话时退出登录。
+     */
     public void logoutCurrent() {
         if (StpUtil.isLogin()) {
             StpUtil.logout();
+            log.info("当前登录令牌已退出");
         }
     }
 
+    /**
+     * 强制指定用户的所有活跃令牌下线。
+     */
     public void kickoutUser(Long userId) {
         if (userId != null) {
             StpUtil.kickout(userId);
+            log.info("用户已被强制下线 用户ID={}", userId);
         }
     }
 
+    /**
+     * 根据原始 token 或 Authorization Bearer 值解析用户。
+     */
     public User getUserByToken(String token) {
         String rawToken = normalizeToken(token);
         if (rawToken == null) {
@@ -56,21 +79,30 @@ public class TokenService {
             }
             return loadActiveUser(Long.valueOf(String.valueOf(loginId)));
         } catch (RuntimeException ex) {
+            log.warn("根据令牌解析用户失败：{}", ex.getMessage());
             return null;
         }
     }
 
+    /**
+     * 要求当前请求用户必须是管理员。
+     */
     public User requireAdmin(HttpServletRequest request) {
         User user = requireUser(request);
         if (!"ADMIN".equals(user.getRole())) {
+            log.warn("管理员权限校验失败 用户ID={} 角色={}", user.getId(), user.getRole());
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "无管理员权限");
         }
         return user;
     }
 
+    /**
+     * 从数据库加载启用状态的用户，并清理密码字段。
+     */
     private User loadActiveUser(Long userId) {
         User user = userMapper.selectById(userId);
         if (user == null || user.getStatus() == null || user.getStatus() == 0) {
+            log.warn("用户不存在或已被禁用 用户ID={}", userId);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "账号已被禁用或登录已失效");
         }
         user.setPassword(null);

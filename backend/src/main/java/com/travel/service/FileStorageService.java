@@ -4,6 +4,8 @@ import com.aliyun.oss.OSS;
 import com.aliyun.oss.model.ObjectMetadata;
 import com.travel.config.AliyunOssProperties;
 import com.travel.dto.FileUploadResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,7 +17,9 @@ import java.util.UUID;
 
 @Service
 public class FileStorageService {
+    private static final Logger log = LoggerFactory.getLogger(FileStorageService.class);
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp", "gif");
+
     private final OSS ossClient;
     private final AliyunOssProperties properties;
 
@@ -24,12 +28,16 @@ public class FileStorageService {
         this.properties = properties;
     }
 
+    /**
+     * 验证图片并上传到阿里云OSS。
+     */
     public FileUploadResponse uploadImage(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("请选择要上传的图片");
         }
         String extension = getExtension(file.getOriginalFilename());
         if (!ALLOWED_EXTENSIONS.contains(extension)) {
+            log.warn("拒绝不支持的图片扩展名 文件名={} 扩展名={}", file.getOriginalFilename(), extension);
             throw new IllegalArgumentException("仅支持 jpg、jpeg、png、webp、gif 图片");
         }
         try {
@@ -37,9 +45,12 @@ public class FileStorageService {
             ObjectMetadata metadata = new ObjectMetadata();
             metadata.setContentLength(file.getSize());
             metadata.setContentType(resolveContentType(file, extension));
+            log.info("正在上传图片到OSS 桶={} 对象名={} 大小={}",
+                    properties.getBucketName(), objectName, file.getSize());
             ossClient.putObject(properties.getBucketName(), objectName, file.getInputStream(), metadata);
             return new FileUploadResponse(buildPublicUrl(objectName), objectName);
         } catch (Exception ex) {
+            log.warn("图片上传失败 文件名={} 错误={}", file.getOriginalFilename(), ex.getMessage());
             throw new IllegalStateException("图片上传失败：" + ex.getMessage(), ex);
         }
     }
