@@ -1,6 +1,8 @@
 package com.travel.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.travel.auth.CurrentUser;
+import com.travel.auth.RequireLogin;
 import com.travel.common.ApiResponse;
 import com.travel.dto.UserProfileResponse;
 import com.travel.dto.UserSearchResponse;
@@ -11,8 +13,6 @@ import com.travel.mapper.FriendRequestMapper;
 import com.travel.mapper.TravelPostMapper;
 import com.travel.mapper.UserMapper;
 import com.travel.service.FriendService;
-import com.travel.service.TokenService;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,35 +24,33 @@ public class UserController {
     private final UserMapper userMapper;
     private final FriendRequestMapper friendRequestMapper;
     private final TravelPostMapper travelPostMapper;
-    private final TokenService tokenService;
     private final FriendService friendService;
 
     public UserController(UserMapper userMapper, FriendRequestMapper friendRequestMapper, TravelPostMapper travelPostMapper,
-                          TokenService tokenService, FriendService friendService) {
+                          FriendService friendService) {
         this.userMapper = userMapper;
         this.friendRequestMapper = friendRequestMapper;
         this.travelPostMapper = travelPostMapper;
-        this.tokenService = tokenService;
         this.friendService = friendService;
     }
 
     @GetMapping("/{id}/profile")
-    public ApiResponse<UserProfileResponse> profile(@PathVariable Long id, HttpServletRequest request) {
+    public ApiResponse<UserProfileResponse> profile(@PathVariable Long id,
+                                                    @CurrentUser(required = false) User current) {
         User target = userMapper.selectById(id);
         if (target == null) {
             throw new IllegalArgumentException("用户不存在");
         }
         target.setPassword(null);
-        User current = tokenService.getUserByToken(request.getHeader("Authorization"));
         String status = current == null ? "GUEST" : current.getId().equals(id) ? "SELF" :
                 friendService.areFriends(current.getId(), id) ? "FRIEND" : "NONE";
         return ApiResponse.ok(new UserProfileResponse(target, status));
     }
 
+    @RequireLogin
     @GetMapping("/search")
     public ApiResponse<List<UserSearchResponse>> search(@RequestParam(required = false) String keyword,
-                                                        HttpServletRequest request) {
-        User current = tokenService.requireUser(request);
+                                                        @CurrentUser User current) {
         if (!StringUtils.hasText(keyword)) {
             return ApiResponse.ok(List.of());
         }
@@ -95,9 +93,9 @@ public class UserController {
                 .orderByDesc(TravelPost::getCreateTime)));
     }
 
+    @RequireLogin
     @PutMapping("/me")
-    public ApiResponse<User> updateMe(@RequestBody User profile, HttpServletRequest request) {
-        User current = tokenService.requireUser(request);
+    public ApiResponse<User> updateMe(@RequestBody User profile, @CurrentUser User current) {
         current.setNickname(profile.getNickname());
         current.setPhone(profile.getPhone());
         current.setAvatarUrl(profile.getAvatarUrl());

@@ -1,12 +1,12 @@
 package com.travel.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.travel.auth.CurrentUser;
+import com.travel.auth.RequireLogin;
 import com.travel.common.ApiResponse;
 import com.travel.entity.TravelPost;
 import com.travel.entity.User;
 import com.travel.mapper.TravelPostMapper;
-import com.travel.service.TokenService;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,11 +15,9 @@ import java.util.List;
 @RequestMapping("/api/posts")
 public class PostController {
     private final TravelPostMapper travelPostMapper;
-    private final TokenService tokenService;
 
-    public PostController(TravelPostMapper travelPostMapper, TokenService tokenService) {
+    public PostController(TravelPostMapper travelPostMapper) {
         this.travelPostMapper = travelPostMapper;
-        this.tokenService = tokenService;
     }
 
     @GetMapping
@@ -48,9 +46,9 @@ public class PostController {
         return ApiResponse.ok(post);
     }
 
+    @RequireLogin
     @PostMapping
-    public ApiResponse<TravelPost> save(@RequestBody TravelPost post, HttpServletRequest request) {
-        User user = tokenService.requireUser(request);
+    public ApiResponse<TravelPost> save(@RequestBody TravelPost post, @CurrentUser User user) {
         if (post.getVisibility() == null || post.getVisibility().isBlank()) {
             post.setVisibility("PUBLIC");
         }
@@ -68,9 +66,9 @@ public class PostController {
         return ApiResponse.ok(post);
     }
 
+    @RequireLogin
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> delete(@PathVariable Long id, HttpServletRequest request) {
-        User user = tokenService.requireUser(request);
+    public ApiResponse<Void> delete(@PathVariable Long id, @CurrentUser User user) {
         TravelPost old = travelPostMapper.selectById(id);
         if (old == null || !old.getUserId().equals(user.getId())) {
             throw new IllegalArgumentException("旅游记录不存在或无权限");

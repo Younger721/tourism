@@ -22,7 +22,15 @@
           <p>{{ post.content }}</p>
           <div class="toolbar">
             <el-button text type="primary" @click="$router.push(`/users/${post.userId}`)">作者主页</el-button>
-            <el-button :icon="Heart" @click="favorite(post)">收藏</el-button>
+            <el-button
+              :class="['favorite-button', { 'is-favorited': post.favorited }]"
+              :disabled="post.favoritePending"
+              :icon="Heart"
+              :type="post.favorited ? 'danger' : ''"
+              @click="toggleFavorite(post)"
+            >
+              {{ post.favorited ? '已收藏' : '收藏' }}
+            </el-button>
           </div>
         </div>
       </el-card>
@@ -79,7 +87,31 @@ onMounted(() => {
 })
 
 async function load() {
-  posts.value = await http.get('/posts', { params: keyword.value ? { keyword: keyword.value } : {} })
+  const [postList, favorites] = await Promise.all([
+    http.get('/posts', { params: keyword.value ? { keyword: keyword.value } : {} }),
+    loadFavorites()
+  ])
+  posts.value = withFavoriteState(postList, favorites)
+}
+
+async function loadFavorites() {
+  if (!localStorage.getItem('token')) {
+    return []
+  }
+  return http.get('/favorites/my')
+}
+
+function withFavoriteState(items, favorites) {
+  const favoriteIds = new Set(
+    favorites
+      .filter((favorite) => favorite.targetType === 'POST')
+      .map((favorite) => String(favorite.targetId))
+  )
+  return items.map((item) => ({
+    ...item,
+    favorited: favoriteIds.has(String(item.id)),
+    favoritePending: false
+  }))
 }
 
 function openCreate() {
@@ -98,14 +130,34 @@ async function save() {
   load()
 }
 
-async function favorite(post) {
-  await http.post('/favorites', { targetType: 'POST', targetId: post.id, targetName: post.title })
-  ElMessage.success('已收藏')
+async function toggleFavorite(post) {
+  if (post.favoritePending) {
+    return
+  }
+  post.favoritePending = true
+  try {
+    if (post.favorited) {
+      await http.delete('/favorites', { params: { targetType: 'POST', targetId: post.id } })
+      post.favorited = false
+      ElMessage.success('已取消收藏')
+    } else {
+      await http.post('/favorites', { targetType: 'POST', targetId: post.id, targetName: post.title })
+      post.favorited = true
+      ElMessage.success('已收藏')
+    }
+  } finally {
+    post.favoritePending = false
+  }
 }
 </script>
 
 <style scoped>
 .post-grid {
   margin-top: 16px;
+}
+
+.favorite-button.is-favorited :deep(svg) {
+  fill: currentColor;
+  stroke: currentColor;
 }
 </style>

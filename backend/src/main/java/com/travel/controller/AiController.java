@@ -2,6 +2,8 @@ package com.travel.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.travel.auth.CurrentUser;
+import com.travel.auth.RequireLogin;
 import com.travel.common.ApiResponse;
 import com.travel.dto.AiChatRequest;
 import com.travel.dto.AiChatResponse;
@@ -11,8 +13,6 @@ import com.travel.entity.AiTripPlan;
 import com.travel.entity.User;
 import com.travel.mapper.AiTripPlanMapper;
 import com.travel.service.AiTripService;
-import com.travel.service.TokenService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,27 +31,25 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+@RequireLogin
 @RequestMapping("/api/ai")
 public class AiController {
     private static final Logger log = LoggerFactory.getLogger(AiController.class);
 
     private final AiTripService aiTripService;
     private final AiTripPlanMapper aiTripPlanMapper;
-    private final TokenService tokenService;
     private final ObjectMapper objectMapper;
 
-    public AiController(AiTripService aiTripService, AiTripPlanMapper aiTripPlanMapper, TokenService tokenService,
+    public AiController(AiTripService aiTripService, AiTripPlanMapper aiTripPlanMapper,
                         ObjectMapper objectMapper) {
         this.aiTripService = aiTripService;
         this.aiTripPlanMapper = aiTripPlanMapper;
-        this.tokenService = tokenService;
         this.objectMapper = objectMapper;
     }
 
     @PostMapping("/trip-plan")
     public ApiResponse<TripPlanResponse> plan(@RequestBody TripPlanRequest request,
-                                              HttpServletRequest httpRequest) throws Exception {
-        User user = tokenService.requireUser(httpRequest);
+                                              @CurrentUser User user) throws Exception {
         log.info("用户[{}]请求生成旅行计划：目的地={}, 天数={}, 预算={}, 模式={}",
                 user.getId(), request.getDestination(), request.getDays(), request.getBudget(), request.getMode());
         TripPlanResponse response = aiTripService.generate(request);
@@ -76,8 +74,7 @@ public class AiController {
      * 调用非流式AI聊天API并返回完整的助手消息。
      */
     @PostMapping("/chat")
-    public ApiResponse<AiChatResponse> chat(@RequestBody AiChatRequest request, HttpServletRequest httpRequest) {
-        User user = tokenService.requireUser(httpRequest);
+    public ApiResponse<AiChatResponse> chat(@RequestBody AiChatRequest request, @CurrentUser User user) {
         log.info("用户[{}]发起AI对话，消息长度{}", user.getId(), safeLength(request.getMessage()));
         AiChatResponse response = new AiChatResponse(aiTripService.chat(request));
         log.info("用户[{}]的AI对话已完成，响应长度{}", user.getId(), safeLength(response.getReply()));
@@ -89,9 +86,8 @@ public class AiController {
      */
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<String>> chatStream(@RequestBody AiChatRequest request,
-                                                    HttpServletRequest httpRequest,
+                                                    @CurrentUser User user,
                                                     HttpServletResponse httpResponse) {
-        User user = tokenService.requireUser(httpRequest);
         httpResponse.setHeader(HttpHeaders.CACHE_CONTROL, "no-cache");
         httpResponse.setHeader("X-Accel-Buffering", "no");
         httpResponse.setHeader(HttpHeaders.CONNECTION, "keep-alive");
@@ -123,8 +119,7 @@ public class AiController {
      * 列出当前用户保存的AI旅行计划。
      */
     @GetMapping("/trip-plan/my")
-    public ApiResponse<List<AiTripPlan>> my(HttpServletRequest request) {
-        User user = tokenService.requireUser(request);
+    public ApiResponse<List<AiTripPlan>> my(@CurrentUser User user) {
         return ApiResponse.ok(aiTripPlanMapper.selectList(new LambdaQueryWrapper<AiTripPlan>()
                 .eq(AiTripPlan::getUserId, user.getId())
                 .orderByDesc(AiTripPlan::getCreateTime)));

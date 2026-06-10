@@ -81,11 +81,6 @@
         show-icon
       />
 
-      <article v-if="answerText" class="answer-card">
-        <h4>搜索摘要</h4>
-        <div>{{ answerText }}</div>
-      </article>
-
       <div v-if="resultItems.length" class="result-grid">
         <article v-for="(item, index) in resultItems" :key="`${item.title}-${index}`" class="result-item">
           <div class="item-top">
@@ -104,7 +99,7 @@
       </div>
 
       <el-alert
-        v-else-if="result.success && !answerText"
+        v-else-if="result.success && !resultItems.length"
         class="state-alert"
         type="warning"
         :closable="false"
@@ -149,7 +144,6 @@ const typeOptions = [
 ]
 
 const formattedData = computed(() => JSON.stringify(result.value?.data ?? {}, null, 2))
-const answerText = computed(() => findAnswerText(result.value?.data))
 const resultItems = computed(() => result.value?.items || [])
 const canSearch = computed(() => {
   if (form.type === 'AI') return Boolean(form.query.trim())
@@ -220,28 +214,6 @@ function formatSearchError(err) {
 
 function openLink(link) {
   window.open(link, '_blank', 'noopener,noreferrer')
-}
-
-function findAnswerText(value) {
-  if (typeof value === 'string') {
-    return value
-  }
-  if (!isPlainObject(value)) {
-    return ''
-  }
-  const direct = value.data || value.result || value.content || value.answer || value.message
-  if (typeof direct === 'string' && direct.trim().length > 20) {
-    return direct
-  }
-  for (const item of Object.values(value)) {
-    const nested = findAnswerText(item)
-    if (nested) return nested
-  }
-  return ''
-}
-
-function isPlainObject(value) {
-  return value && typeof value === 'object' && !Array.isArray(value)
 }
 </script>
 
@@ -314,26 +286,6 @@ function isPlainObject(value) {
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 14px;
   margin-bottom: 16px;
-}
-
-.answer-card {
-  padding: 18px;
-  margin-bottom: 16px;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-md);
-  background: var(--glass-bg);
-  backdrop-filter: blur(10px) saturate(120%);
-}
-
-.answer-card h4 {
-  margin: 0 0 12px;
-  color: var(--heading-color);
-}
-
-.answer-card div {
-  white-space: pre-wrap;
-  line-height: 1.75;
-  overflow-wrap: anywhere;
 }
 
 .result-item {

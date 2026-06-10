@@ -1,6 +1,8 @@
 package com.travel.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.travel.auth.CurrentUser;
+import com.travel.auth.RequireAdmin;
 import com.travel.common.ApiResponse;
 import com.travel.entity.Comment;
 import com.travel.entity.Favorite;
@@ -17,7 +19,6 @@ import com.travel.mapper.UserMapper;
 import com.travel.service.TokenService;
 import com.travel.websocket.AuthWebSocketHandler;
 import com.travel.websocket.ChatWebSocketHandler;
-import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
+@RequireAdmin
 @RequestMapping("/api/admin")
 public class AdminController {
     private static final Logger log = LoggerFactory.getLogger(AdminController.class);
@@ -67,8 +69,7 @@ public class AdminController {
      * 返回管理员首页的仪表盘统计数据。
      */
     @GetMapping("/stats")
-    public ApiResponse<Map<String, Long>> stats(HttpServletRequest request) {
-        User admin = tokenService.requireAdmin(request);
+    public ApiResponse<Map<String, Long>> stats(@CurrentUser User admin) {
         Map<String, Long> data = new LinkedHashMap<>();
         data.put("users", userMapper.selectCount(null));
         data.put("spots", scenicSpotMapper.selectCount(null));
@@ -79,8 +80,7 @@ public class AdminController {
     }
 
     @GetMapping("/scenic-spots")
-    public ApiResponse<List<ScenicSpot>> scenicSpots(HttpServletRequest request) {
-        tokenService.requireAdmin(request);
+    public ApiResponse<List<ScenicSpot>> scenicSpots() {
         return ApiResponse.ok(scenicSpotMapper.selectList(new LambdaQueryWrapper<ScenicSpot>()
                 .orderByDesc(ScenicSpot::getCreateTime)));
     }
@@ -89,8 +89,7 @@ public class AdminController {
      * 从管理控制台创建或更新景点记录。
      */
     @PostMapping("/scenic-spots")
-    public ApiResponse<ScenicSpot> saveScenicSpot(@RequestBody ScenicSpot item, HttpServletRequest request) {
-        User admin = tokenService.requireAdmin(request);
+    public ApiResponse<ScenicSpot> saveScenicSpot(@RequestBody ScenicSpot item, @CurrentUser User admin) {
         if (item.getStatus() == null) {
             item.setStatus(1);
         }
@@ -108,8 +107,7 @@ public class AdminController {
      * 删除景点并清理相关的评论和收藏。
      */
     @DeleteMapping("/scenic-spots/{id}")
-    public ApiResponse<Void> deleteScenicSpot(@PathVariable Long id, HttpServletRequest request) {
-        User admin = tokenService.requireAdmin(request);
+    public ApiResponse<Void> deleteScenicSpot(@PathVariable Long id, @CurrentUser User admin) {
         scenicSpotMapper.deleteById(id);
         deleteEngagements("SCENIC", id);
         log.info("管理员[{}]删除了景点 [ID={}]", admin.getId(), id);
@@ -117,8 +115,7 @@ public class AdminController {
     }
 
     @GetMapping("/users")
-    public ApiResponse<List<User>> users(HttpServletRequest request) {
-        tokenService.requireAdmin(request);
+    public ApiResponse<List<User>> users() {
         List<User> users = userMapper.selectList(new LambdaQueryWrapper<User>().orderByDesc(User::getCreateTime));
         users.forEach(user -> user.setPassword(null));
         return ApiResponse.ok(users);
@@ -128,8 +125,7 @@ public class AdminController {
      * 禁用用户账户并强制用户下线。
      */
     @DeleteMapping("/users/{id}")
-    public ApiResponse<Void> disableUser(@PathVariable Long id, HttpServletRequest request) {
-        User admin = tokenService.requireAdmin(request);
+    public ApiResponse<Void> disableUser(@PathVariable Long id, @CurrentUser User admin) {
         log.info("管理员[{}]禁用了用户 [ID={}]", admin.getId(), id);
         setUserStatus(id, 0, admin);
         return ApiResponse.ok(null);
@@ -140,8 +136,7 @@ public class AdminController {
      */
     @PatchMapping("/users/{id}/status")
     public ApiResponse<User> updateUserStatus(@PathVariable Long id, @RequestBody UserStatusRequest body,
-                                              HttpServletRequest request) {
-        User admin = tokenService.requireAdmin(request);
+                                              @CurrentUser User admin) {
         log.info("管理员[{}]修改用户状态 [用户ID={}, 状态={}]", admin.getId(), id, body.status() == 1 ? "启用" : "禁用");
         User user = setUserStatus(id, body.status(), admin);
         user.setPassword(null);
@@ -152,8 +147,7 @@ public class AdminController {
      * 强制用户下线而不改变账户状态。
      */
     @PostMapping("/users/{id}/kickout")
-    public ApiResponse<Void> kickoutUser(@PathVariable Long id, HttpServletRequest request) {
-        User admin = tokenService.requireAdmin(request);
+    public ApiResponse<Void> kickoutUser(@PathVariable Long id, @CurrentUser User admin) {
         log.info("管理员[{}]强制用户下线 [用户ID={}]", admin.getId(), id);
         assertNotSelf(admin, id);
         assertUserExists(id);
@@ -162,8 +156,7 @@ public class AdminController {
     }
 
     @GetMapping("/posts")
-    public ApiResponse<List<TravelPost>> posts(HttpServletRequest request) {
-        tokenService.requireAdmin(request);
+    public ApiResponse<List<TravelPost>> posts() {
         return ApiResponse.ok(travelPostMapper.selectList(new LambdaQueryWrapper<TravelPost>().orderByDesc(TravelPost::getCreateTime)));
     }
 
@@ -171,8 +164,7 @@ public class AdminController {
      * 删除社区帖子及其评论和收藏。
      */
     @DeleteMapping("/posts/{id}")
-    public ApiResponse<Void> deletePost(@PathVariable Long id, HttpServletRequest request) {
-        User admin = tokenService.requireAdmin(request);
+    public ApiResponse<Void> deletePost(@PathVariable Long id, @CurrentUser User admin) {
         travelPostMapper.deleteById(id);
         deleteEngagements("POST", id);
         log.info("管理员[{}]删除了帖子 [ID={}]", admin.getId(), id);
@@ -180,8 +172,7 @@ public class AdminController {
     }
 
     @GetMapping("/footprints")
-    public ApiResponse<List<Footprint>> footprints(HttpServletRequest request) {
-        tokenService.requireAdmin(request);
+    public ApiResponse<List<Footprint>> footprints() {
         return ApiResponse.ok(footprintMapper.selectList(new LambdaQueryWrapper<Footprint>().orderByDesc(Footprint::getCreateTime)));
     }
 
@@ -189,8 +180,7 @@ public class AdminController {
      * 删除用户足迹记录。
      */
     @DeleteMapping("/footprints/{id}")
-    public ApiResponse<Void> deleteFootprint(@PathVariable Long id, HttpServletRequest request) {
-        User admin = tokenService.requireAdmin(request);
+    public ApiResponse<Void> deleteFootprint(@PathVariable Long id, @CurrentUser User admin) {
         footprintMapper.deleteById(id);
         log.info("管理员[{}]删除了足迹记录 [ID={}]", admin.getId(), id);
         return ApiResponse.ok(null);

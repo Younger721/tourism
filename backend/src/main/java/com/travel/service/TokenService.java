@@ -99,7 +99,7 @@ public class TokenService {
     /**
      * 从数据库加载启用状态的用户，并清理密码字段。
      */
-    private User loadActiveUser(Long userId) {
+    public User loadActiveUser(Long userId) {
         User user = userMapper.selectById(userId);
         if (user == null || user.getStatus() == null || user.getStatus() == 0) {
             log.warn("用户不存在或已被禁用 [ID={}]", userId);

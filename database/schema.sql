@@ -93,7 +93,8 @@ CREATE TABLE IF NOT EXISTS favorite (
   target_id BIGINT NOT NULL COMMENT '收藏对象ID',
   target_name VARCHAR(100) COMMENT '收藏对象名称，便于列表展示',
   create_time DATETIME COMMENT '创建时间',
-  update_time DATETIME COMMENT '更新时间'
+  update_time DATETIME COMMENT '更新时间',
+  UNIQUE KEY uk_favorite_target (user_id, target_type, target_id)
 ) COMMENT='收藏表，保存用户收藏的旅游记录或景点灵感';
 
 CREATE TABLE IF NOT EXISTS friend_request (

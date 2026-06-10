@@ -7,7 +7,15 @@
       <p>{{ item.description || '暂无简介' }}</p>
       <div class="toolbar">
         <el-tag type="success">灵感目的地</el-tag>
-        <el-button :icon="Heart" @click="$emit('favorite', item)">收藏</el-button>
+        <el-button
+          :class="['favorite-button', { 'is-favorited': favorited }]"
+          :disabled="item.favoritePending"
+          :icon="Heart"
+          :type="favorited ? 'danger' : ''"
+          @click="$emit('favorite', item)"
+        >
+          {{ favorited ? '已收藏' : '收藏' }}
+        </el-button>
       </div>
     </div>
   </el-card>
@@ -19,7 +27,8 @@ import { Heart } from 'lucide-vue-next'
 
 const props = defineProps({
   item: { type: Object, required: true },
-  type: { type: String, required: true }
+  type: { type: String, required: true },
+  favorited: { type: Boolean, default: false }
 })
 defineEmits(['favorite'])
 
@@ -36,3 +45,10 @@ function useFallback() {
   failed.value = true
 }
 </script>
+
+<style scoped>
+.favorite-button.is-favorited :deep(svg) {
+  fill: currentColor;
+  stroke: currentColor;
+}
+</style>

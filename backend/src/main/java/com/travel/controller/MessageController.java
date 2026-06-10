@@ -1,6 +1,8 @@
 package com.travel.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.travel.auth.CurrentUser;
+import com.travel.auth.RequireLogin;
 import com.travel.common.ApiResponse;
 import com.travel.dto.ConversationResponse;
 import com.travel.entity.ChatMessage;
@@ -8,31 +10,27 @@ import com.travel.entity.User;
 import com.travel.mapper.ChatMessageMapper;
 import com.travel.mapper.UserMapper;
 import com.travel.service.FriendService;
-import com.travel.service.TokenService;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
+@RequireLogin
 @RequestMapping("/api/messages")
 public class MessageController {
     private final ChatMessageMapper chatMessageMapper;
     private final UserMapper userMapper;
-    private final TokenService tokenService;
     private final FriendService friendService;
 
-    public MessageController(ChatMessageMapper chatMessageMapper, UserMapper userMapper, TokenService tokenService, FriendService friendService) {
+    public MessageController(ChatMessageMapper chatMessageMapper, UserMapper userMapper, FriendService friendService) {
         this.chatMessageMapper = chatMessageMapper;
         this.userMapper = userMapper;
-        this.tokenService = tokenService;
         this.friendService = friendService;
     }
 
     @GetMapping("/conversations")
-    public ApiResponse<List<ConversationResponse>> conversations(HttpServletRequest request) {
-        User user = tokenService.requireUser(request);
+    public ApiResponse<List<ConversationResponse>> conversations(@CurrentUser User user) {
         List<ChatMessage> messages = chatMessageMapper.selectList(new LambdaQueryWrapper<ChatMessage>()
                 .and(w -> w.eq(ChatMessage::getSenderId, user.getId()).or().eq(ChatMessage::getReceiverId, user.getId()))
                 .orderByDesc(ChatMessage::getCreateTime));
@@ -58,8 +56,7 @@ public class MessageController {
     }
 
     @GetMapping
-    public ApiResponse<List<ChatMessage>> history(@RequestParam Long friendId, HttpServletRequest request) {
-        User user = tokenService.requireUser(request);
+    public ApiResponse<List<ChatMessage>> history(@RequestParam Long friendId, @CurrentUser User user) {
         if (!friendService.areFriends(user.getId(), friendId)) {
             throw new IllegalArgumentException("只有好友之间可以查看私信");
         }

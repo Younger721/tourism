@@ -1,6 +1,8 @@
 package com.travel.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.travel.auth.CurrentUser;
+import com.travel.auth.RequireLogin;
 import com.travel.common.ApiResponse;
 import com.travel.entity.FriendRequest;
 import com.travel.entity.Friendship;
@@ -9,37 +11,33 @@ import com.travel.mapper.FriendRequestMapper;
 import com.travel.mapper.FriendshipMapper;
 import com.travel.mapper.UserMapper;
 import com.travel.service.FriendService;
-import com.travel.service.TokenService;
 import com.travel.websocket.ChatWebSocketHandler;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
+@RequireLogin
 @RequestMapping("/api/friends")
 public class FriendController {
     private final FriendRequestMapper friendRequestMapper;
     private final FriendshipMapper friendshipMapper;
     private final UserMapper userMapper;
-    private final TokenService tokenService;
     private final FriendService friendService;
     private final ChatWebSocketHandler chatWebSocketHandler;
 
     public FriendController(FriendRequestMapper friendRequestMapper, FriendshipMapper friendshipMapper,
-                            UserMapper userMapper, TokenService tokenService, FriendService friendService,
+                            UserMapper userMapper, FriendService friendService,
                             ChatWebSocketHandler chatWebSocketHandler) {
         this.friendRequestMapper = friendRequestMapper;
         this.friendshipMapper = friendshipMapper;
         this.userMapper = userMapper;
-        this.tokenService = tokenService;
         this.friendService = friendService;
         this.chatWebSocketHandler = chatWebSocketHandler;
     }
 
     @GetMapping
-    public ApiResponse<List<User>> friends(HttpServletRequest request) {
-        User user = tokenService.requireUser(request);
+    public ApiResponse<List<User>> friends(@CurrentUser User user) {
         List<Long> ids = friendshipMapper.selectList(new LambdaQueryWrapper<Friendship>()
                         .eq(Friendship::getUserId, user.getId()))
                 .stream().map(Friendship::getFriendId).toList();
@@ -52,8 +50,7 @@ public class FriendController {
     }
 
     @GetMapping("/requests")
-    public ApiResponse<List<FriendRequest>> requests(HttpServletRequest request) {
-        User user = tokenService.requireUser(request);
+    public ApiResponse<List<FriendRequest>> requests(@CurrentUser User user) {
         return ApiResponse.ok(friendRequestMapper.selectList(new LambdaQueryWrapper<FriendRequest>()
                 .eq(FriendRequest::getToUserId, user.getId())
                 .eq(FriendRequest::getStatus, "PENDING")
@@ -61,8 +58,7 @@ public class FriendController {
     }
 
     @PostMapping("/requests")
-    public ApiResponse<FriendRequest> requestFriend(@RequestBody FriendRequest friendRequest, HttpServletRequest request) {
-        User user = tokenService.requireUser(request);
+    public ApiResponse<FriendRequest> requestFriend(@RequestBody FriendRequest friendRequest, @CurrentUser User user) {
         if (friendRequest.getToUserId() == null || friendRequest.getToUserId().equals(user.getId())) {
             throw new IllegalArgumentException("请选择正确的用户");
         }
@@ -84,8 +80,7 @@ public class FriendController {
     }
 
     @PostMapping("/requests/{id}/accept")
-    public ApiResponse<Void> accept(@PathVariable Long id, HttpServletRequest request) {
-        User user = tokenService.requireUser(request);
+    public ApiResponse<Void> accept(@PathVariable Long id, @CurrentUser User user) {
         FriendRequest friendRequest = friendRequestMapper.selectById(id);
         if (friendRequest == null || !friendRequest.getToUserId().equals(user.getId())) {
             throw new IllegalArgumentException("好友申请不存在");
@@ -99,8 +94,7 @@ public class FriendController {
     }
 
     @PostMapping("/requests/{id}/reject")
-    public ApiResponse<Void> reject(@PathVariable Long id, HttpServletRequest request) {
-        User user = tokenService.requireUser(request);
+    public ApiResponse<Void> reject(@PathVariable Long id, @CurrentUser User user) {
         FriendRequest friendRequest = friendRequestMapper.selectById(id);
         if (friendRequest == null || !friendRequest.getToUserId().equals(user.getId())) {
             throw new IllegalArgumentException("好友申请不存在");
@@ -112,8 +106,7 @@ public class FriendController {
     }
 
     @DeleteMapping("/{friendId}")
-    public ApiResponse<Void> delete(@PathVariable Long friendId, HttpServletRequest request) {
-        User user = tokenService.requireUser(request);
+    public ApiResponse<Void> delete(@PathVariable Long friendId, @CurrentUser User user) {
         friendshipMapper.delete(new LambdaQueryWrapper<Friendship>()
                 .eq(Friendship::getUserId, user.getId())
                 .eq(Friendship::getFriendId, friendId));
